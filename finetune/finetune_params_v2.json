@@ -1,0 +1,12 @@
+{
+    "model": "ResNet18_FineTuned",
+    "base_model": "resnet18_model_v1.pth",
+    "batch_size": 32,
+    "num_epochs": 5,
+    "learning_rate": 0.0001,
+    "optimizer": "AdamW",
+    "scheduler": "CosineAnnealingLR(optimizer,T_max=finetune_params[\"num_epochs\"])",
+    "train_dataset_size": 3997,
+    "test_dataset_size": 2000,
+    "timestamp": "2026-05-25T07:16:17.341413"
+}

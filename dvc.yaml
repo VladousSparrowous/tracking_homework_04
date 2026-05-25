@@ -1,0 +1,45 @@
+# dvc.yaml
+stages:
+  train_base_model:
+    cmd: python train_base_model.py --train_dir Train_1 --test_dir Test_1 --output model_v1.pth
+    deps:
+      - data/Train_1
+      - data/Test_1
+      - train_base_model.py
+    outs:
+      - model_v1.pth
+    metrics:
+      - metrics_v1.json
+    params:
+      - batch_size
+      - epochs
+      - learning_rate
+
+  upload_model_v1:
+    cmd: python upload_to_s3.py --model model_v1.pth --name resnet18_model_v1.pth
+    deps:
+      - model_v1.pth
+    outs:
+      - s3://models/resnet18_model_v1.pth
+
+  finetune_model:
+    cmd: python finetune_model.py --train_dir Train_2 --test_dir Test_2 --base_model model_v1.pth --output model_v2.pth
+    deps:
+      - data/Train_2
+      - data/Test_2
+      - model_v1.pth
+      - finetune_model.py
+    outs:
+      - model_v2.pth
+    metrics:
+      - metrics_v2.json
+    params:
+      - finetune_lr
+      - finetune_epochs
+
+  upload_model_v2:
+    cmd: python upload_to_s3.py --model model_v2.pth --name resnet18_model_v2_finetuned.pth
+    deps:
+      - model_v2.pth
+    outs:
+      - s3://models/resnet18_model_v2_finetuned.pth
