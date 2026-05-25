@@ -1,45 +1,57 @@
-# dvc.yaml
 stages:
-  train_base_model:
-    cmd: python train_base_model.py --train_dir Train_1 --test_dir Test_1 --output model_v1.pth
+  train_base:
+    cmd: python scripts/train_base.py --batch_size ${train_base.batch_size} 
+      --epochs ${train_base.epochs} --lr ${train_base.lr}
     deps:
-      - data/Train_1
-      - data/Test_1
-      - train_base_model.py
-    outs:
-      - model_v1.pth
-    metrics:
-      - metrics_v1.json
+    - ai-vs-human-generated-dataset-hw/Train_1
+    - ai-vs-human-generated-dataset-hw/Test_1
+    - scripts/train_base.py
+    - data/dataset.py
     params:
-      - batch_size
-      - epochs
-      - learning_rate
-
-  upload_model_v1:
-    cmd: python upload_to_s3.py --model model_v1.pth --name resnet18_model_v1.pth
-    deps:
-      - model_v1.pth
+    - train_base
     outs:
-      - s3://models/resnet18_model_v1.pth
-
-  finetune_model:
-    cmd: python finetune_model.py --train_dir Train_2 --test_dir Test_2 --base_model model_v1.pth --output model_v2.pth
-    deps:
-      - data/Train_2
-      - data/Test_2
-      - model_v1.pth
-      - finetune_model.py
-    outs:
-      - model_v2.pth
+    - train_base_model/model/base_model.pth
+    - train_base_model/base_train_metrics.json
     metrics:
-      - metrics_v2.json
-    params:
-      - finetune_lr
-      - finetune_epochs
+    - train_base_model/base_test_metrics.json:
+        cache: false
 
-  upload_model_v2:
-    cmd: python upload_to_s3.py --model model_v2.pth --name resnet18_model_v2_finetuned.pth
+  finetune:
+    cmd: python scripts/finetune.py --base_model_path models/base_model.pth 
+      --batch_size ${finetune.batch_size} --epochs ${finetune.epochs} --lr 
+      ${finetune.lr}
     deps:
-      - model_v2.pth
+    - train_base_model/model/base_model.pth
+    - ai-vs-human-generated-dataset-hw/Train_2
+    - ai-vs-human-generated-dataset-hw/Test_2
+    - scripts/finetune.py
+    params:
+    - finetune
     outs:
-      - s3://models/resnet18_model_v2_finetuned.pth
+    - finetune/model/finetuned_model.pth
+    - finetune/finetune_train_metrics.json
+    metrics:
+    - finetune/finetuned_test_metrics.json:
+        cache: false
+
+  evaluate_finetuned:
+    cmd: python scripts/evaluate.py --model_path models/finetuned_model.pth 
+      --test_csv ai-vs-human-generated-dataset-hw/Test_2/test.csv --test_root ai-vs-human-generated-dataset-hw/Test_2 --output_json 
+      metrics/finetuned_eval_metrics.json
+    deps:
+    - finetune/model/finetuned_model.pth
+    - data/Test_2
+    outs:
+    - finetune/finetuned_eval_metrics.json
+    metrics:
+    - finetune/finetuned_eval_metrics.json:
+        cache: false
+
+  upload_models:
+    cmd: python scripts/upload_to_s3.py --model_path models/base_model.pth 
+      --model_name resnet18_v1.pth && python scripts/upload_to_s3.py 
+      --model_path models/finetuned_model.pth --model_name 
+      resnet18_v2_finetuned.pth
+    deps:
+    - train_base_model/model/base_model.pth
+    - finetune/model/finetuned_model.pth
