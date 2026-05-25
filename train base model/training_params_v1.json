@@ -1,0 +1,11 @@
+{
+    "model": "ResNet18",
+    "batch_size": 32,
+    "num_epochs": 10,
+    "learning_rate": 0.001,
+    "optimizer": "Adam",
+    "scheduler": "StepLR(step_size=5, gamma=0.1)",
+    "train_dataset_size": 9993,
+    "test_dataset_size": 3997,
+    "timestamp": "2026-05-22T22:58:31.263308"
+}
